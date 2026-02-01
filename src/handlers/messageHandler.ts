@@ -61,20 +61,28 @@ export class MessageHandler {
     // Ignore status broadcasts
     if (senderPhone === 'status') return;
 
-    // Check if it's a command for the manager group
-    if (isGroupMessage && groupJid === this.managerGroupJid) {
-      await this.handleManagerCommand(content?.trim() || '', senderPhone, senderJid);
+    // Check if owner wants to install this group as manager
+    if (isGroupMessage && content?.trim().toLowerCase() === '!instalar' && senderPhone === this.ownerPhone) {
+      this.managerGroupJid = groupJid;
+      await this.whatsapp.sendMessage(senderJid,
+        `✅ *Grupo de Gerenciamento Configurado!*\n\n` +
+        `Este grupo agora é o painel de controle da sua barbearia.\n\n` +
+        `📅 *COMANDOS:*\n` +
+        `• *hoje* - Agendamentos de hoje\n` +
+        `• *amanhã* - Agendamentos de amanhã\n` +
+        `• *semana* - Agenda da semana\n` +
+        `• *finanças* - Resumo financeiro\n` +
+        `• *clientes* - Lista de clientes\n` +
+        `• *menu* - Ver este menu\n\n` +
+        `Gerencie sua barbearia diretamente pelo WhatsApp! 💈`
+      );
+      console.log(`✅ Grupo de gerenciamento definido: ${groupJid}`);
       return;
     }
 
-    // If owner sends a message from a group and manager group is not set, ask for JID
-    if (isGroupMessage && senderPhone === this.ownerPhone && !this.managerGroupJid) {
-      await this.whatsapp.sendMessage(senderJid,
-        `👋 Olá! Para usar comandos neste grupo, preciso do JID do grupo.\n\n` +
-        `O JID aparece no link do convite ou você pode obter no WhatsApp Web.\n\n` +
-        `Digite no terminal: setgroup <jid-do-grupo>\n\n` +
-        `Exemplo: setgroup 120363XXXXXXXXXX@g.us`
-      );
+    // Check if it's a command for the manager group
+    if (isGroupMessage && groupJid === this.managerGroupJid) {
+      await this.handleManagerCommand(content?.trim() || '', senderPhone, senderJid);
       return;
     }
 
