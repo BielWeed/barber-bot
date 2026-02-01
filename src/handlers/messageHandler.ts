@@ -76,7 +76,7 @@ export class MessageHandler {
     const isOwner = normalizedSender === normalizedOwner;
 
     // Check if owner wants to install this group as manager
-    if (isGroupMessage && content?.trim().toLowerCase() === '!instalar' && isOwner) {
+    if (isGroupMessage && groupJid && content?.trim().toLowerCase() === '!instalar' && isOwner) {
       this.managerGroupJid = groupJid;
       // Persist to database
       setConfig('manager_group_jid', groupJid);

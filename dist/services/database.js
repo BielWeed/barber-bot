@@ -259,6 +259,10 @@ function getConfig(key) {
     return row?.value || null;
 }
 function setConfig(key, value) {
+    if (!key || value === undefined || value === null) {
+        console.log('setConfig: invalid key or value', { key, value });
+        return;
+    }
     db?.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', [key, value]);
     saveDatabase();
 }
