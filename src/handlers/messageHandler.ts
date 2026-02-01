@@ -443,7 +443,12 @@ Gerencie sua barbearia!`;
         await this.handleTimeSelection(session, command, jid);
         break;
       case 'awaiting_name':
-        await this.handleNameInput(session, originalContent, jid);
+        if (command === '2' || command === 'cancelar' || command === 'cancelar') {
+          this.sessions.delete(session.phone);
+          await this.whatsapp.sendMessage(jid, '❌ Agendamento cancelado.');
+        } else {
+          await this.handleNameInput(session, originalContent, jid);
+        }
         break;
       case 'confirming':
         await this.handleConfirmation(session, command, jid);
@@ -558,9 +563,9 @@ Gerencie sua barbearia!`;
         session.state = 'confirming';
         await this.showConfirmation(session, jid, existingClient.name);
       } else {
-        await this.whatsapp.sendMessage(jid, `👤 *QUAL É O SEU NOME?*\n\nPor favor, digite seu nome completo:`);
+        await this.whatsapp.sendMessage(jid, `👤 *QUAL É O SEU NOME?*\n\nPor favor, digite seu nome completo:\n\n*2* - Cancelar`);
       }
-    } else if (command === '0') {
+    } else if (command === '2' || command === '0') {
       this.sessions.delete(session.phone);
       await this.whatsapp.sendMessage(jid, '❌ Agendamento cancelado.');
       return;
@@ -571,7 +576,7 @@ Gerencie sua barbearia!`;
 
   private async handleNameInput(session: UserSession, name: string, jid: string): Promise<void> {
     if (!name || name.length < 2) {
-      await this.whatsapp.sendMessage(jid, '❌ Nome inválido. Por favor, digite seu nome completo:');
+      await this.whatsapp.sendMessage(jid, '❌ Nome inválido. Por favor, digite seu nome completo:\n\n*2* - Cancelar');
       return;
     }
 
@@ -590,13 +595,14 @@ Gerencie sua barbearia!`;
     text += `🕐 *Horário:* ${this.scheduler.formatTime(session.selectedTime!)} às ${this.scheduler.formatTime(endTime)}\n`;
     text += `💰 *Valor:* R$ ${service!.price.toFixed(2)}\n`;
     text += `👤 *Cliente:* ${clientName}\n\n`;
-    text += `Digite *confirmar* para confirmar ou *cancelar* para cancelar.`;
+    text += `*1* - ✅ Confirmar\n`;
+    text += `*2* - ❌ Cancelar`;
 
     await this.whatsapp.sendMessage(jid, text);
   }
 
   private async handleConfirmation(session: UserSession, command: string, jid: string): Promise<void> {
-    if (command === 'confirmar' || command === 'confirmar' || command === 'sim' || command === 's') {
+    if (command === '1' || command === 'confirmar' || command === 'confirmar' || command === 'sim' || command === 's') {
       const service = getServiceById(session.selectedService!);
       const clientPhone = session.phone;
 
@@ -655,7 +661,7 @@ Gerencie sua barbearia!`;
       }
 
       this.sessions.delete(session.phone);
-    } else if (command === 'cancelar' || command === 'cancelar') {
+    } else if (command === '2' || command === 'cancelar' || command === 'cancelar' || command === 'cancel') {
       this.sessions.delete(session.phone);
       await this.whatsapp.sendMessage(jid, '❌ Agendamento cancelado.');
     } else {
