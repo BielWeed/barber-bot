@@ -81,6 +81,13 @@ async function main() {
     whatsapp.on('connected', async () => {
         console.log('✅ Conectado ao WhatsApp com sucesso!');
         console.log('🤖 Bot pronto para receber mensagens\n');
+        // Check if manager group is saved in database
+        const savedGroupJid = (0, database_1.getConfig)('manager_group_jid');
+        if (savedGroupJid) {
+            messageHandler.setManagerGroup(savedGroupJid);
+            console.log(`✅ Grupo de gerenciamento restaurado: ${savedGroupJid}`);
+            return;
+        }
         // Create manager group if owner phone is set
         if (config.ownerPhone) {
             try {
@@ -106,16 +113,14 @@ async function main() {
                     else {
                         console.log('ℹ️ Não foi possível criar o grupo automaticamente.');
                         console.log('   Para definir o grupo de gerenciamento:');
-                        console.log('   - Crie um grupo no WhatsApp e adicione o bot');
-                        console.log('   - Depois digite: setgroup <jid-do-grupo>');
+                        console.log('   - Entre em um grupo e digite: !instalar');
                     }
                 }
             }
             catch (error) {
                 console.log('ℹ️ Não foi possível criar grupo automaticamente.');
-                console.log('   Para definir o grupo de gerenciamento manualmente:');
-                console.log('   - Crie um grupo no WhatsApp e adicione o bot');
-                console.log('   - Depois digite: setgroup <jid-do-grupo>');
+                console.log('   Para definir o grupo de gerenciamento:');
+                console.log('   - Entre em um grupo e digite: !instalar');
             }
         }
     });

@@ -13,7 +13,8 @@ import {
   getFinancialSummary,
   getFinancialRecords,
   insertFinancialRecord,
-  getAllClients
+  getAllClients,
+  setConfig
 } from '../services/database';
 import { SchedulerService } from '../services/scheduler';
 import { WhatsAppService } from '../services/whatsapp';
@@ -77,6 +78,8 @@ export class MessageHandler {
     // Check if owner wants to install this group as manager
     if (isGroupMessage && content?.trim().toLowerCase() === '!instalar' && isOwner) {
       this.managerGroupJid = groupJid;
+      // Persist to database
+      setConfig('manager_group_jid', groupJid);
       await this.whatsapp.sendMessage(senderJid,
         `✅ *Grupo de Gerenciamento Configurado!*\n\n` +
         `Este grupo agora é o painel de controle da sua barbearia.\n\n` +
@@ -89,7 +92,7 @@ export class MessageHandler {
         `• *menu* - Ver este menu\n\n` +
         `Gerencie sua barbearia diretamente pelo WhatsApp! 💈`
       );
-      console.log(`✅ Grupo de gerenciamento definido: ${groupJid}`);
+      console.log(`✅ Grupo de gerenciamento definido e salvo: ${groupJid}`);
       return;
     }
 

@@ -19,6 +19,8 @@ exports.updateAppointmentStatus = updateAppointmentStatus;
 exports.insertFinancialRecord = insertFinancialRecord;
 exports.getFinancialRecords = getFinancialRecords;
 exports.getFinancialSummary = getFinancialSummary;
+exports.getConfig = getConfig;
+exports.setConfig = setConfig;
 const sql_js_1 = __importDefault(require("sql.js"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -241,5 +243,17 @@ function getFinancialSummary(startDate, endDate) {
     const income = records.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0);
     const expense = records.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0);
     return { income, expense, balance: income - expense };
+}
+// Config operations
+function getConfig(key) {
+    const stmt = db?.prepare('SELECT value FROM config WHERE key = ?');
+    stmt?.get([key]);
+    const row = stmt?.getAsObject();
+    stmt?.free();
+    return row?.value || null;
+}
+function setConfig(key, value) {
+    db?.run('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', [key, value]);
+    saveDatabase();
 }
 //# sourceMappingURL=database.js.map

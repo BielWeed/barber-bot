@@ -266,3 +266,20 @@ export function getFinancialSummary(startDate?: Date, endDate?: Date): { income:
   const expense = records.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0);
   return { income, expense, balance: income - expense };
 }
+
+// Config operations
+export function getConfig(key: string): string | null {
+  const stmt = db?.prepare('SELECT value FROM config WHERE key = ?');
+  stmt?.get([key]);
+  const row = stmt?.getAsObject();
+  stmt?.free();
+  return row?.value as string || null;
+}
+
+export function setConfig(key: string, value: string) {
+  db?.run(
+    'INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)',
+    [key, value]
+  );
+  saveDatabase();
+}
