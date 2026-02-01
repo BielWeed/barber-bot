@@ -115,28 +115,40 @@ export class MessageHandler {
     }
     const session = this.sessions.get(phone)!;
 
-    // Check for cancel command
+    // First, handle scheduling flow if in progress (before other checks)
+    if (session.state !== 'idle') {
+      await this.handleSchedulingFlow(session, command, senderJid, originalContent);
+      return;
+    }
+
+    // Check for cancel command (only when idle)
     if (command === 'cancelar' || command === 'cancel' || command === '0') {
       this.sessions.delete(phone);
       await this.whatsapp.sendMessage(senderJid, '❌ Agendamento cancelado. Quando quiser agendar, é só mandar *menu*!');
       return;
     }
 
-    // Main menu
-    if (command === 'menu' || command === 'oi' || command === 'olá' || command === 'ola' || command === 'início' || command === 'inicio' || command === '1') {
-      this.sessions.delete(phone);
+    // Main menu - only for explicit "menu" or greeting commands
+    if (command === 'menu' || command === 'oi' || command === 'olá' || command === 'ola' || command === 'início' || command === 'inicio') {
       await this.sendMainMenu(senderJid);
       return;
     }
 
-    // Show services
-    if (command === 'serviços' || command === 'servicos' || command === '2' || command === 'servico') {
+    // Start scheduling flow with "1" or "agendar"
+    if (command === '1' || command === 'agendar') {
+      session.state = 'selecting_service';
+      await this.sendServicesList(senderJid);
+      return;
+    }
+
+    // Show services with "2" or "servicos"
+    if (command === '2' || command === 'serviços' || command === 'servicos' || command === 'servico') {
       await this.sendServices(senderJid);
       return;
     }
 
-    // Show my appointments
-    if (command === 'meus horários' || command === 'meus horarios' || command === '3') {
+    // Show my appointments with "3" or "meus horarios"
+    if (command === '3' || command === 'meus horários' || command === 'meus horarios') {
       await this.sendMyAppointments(phone, senderJid);
       return;
     }
@@ -144,12 +156,6 @@ export class MessageHandler {
     // Help
     if (command === 'ajuda' || command === 'help' || command === '?') {
       await this.sendHelp(senderJid);
-      return;
-    }
-
-    // Handle scheduling flow
-    if (session.state !== 'idle') {
-      await this.handleSchedulingFlow(session, command, senderJid, originalContent);
       return;
     }
 
@@ -448,6 +454,13 @@ Gerencie sua barbearia!`;
   private async handleServiceSelection(session: UserSession, command: string, jid: string): Promise<void> {
     const services = getAllServices();
     const serviceIndex = parseInt(command) - 1;
+
+    // Check if command is a valid number
+    if (isNaN(serviceIndex)) {
+      await this.whatsapp.sendMessage(jid, '❌ Por favor, digite o *número* do serviço desejado:\n');
+      await this.sendServicesList(jid);
+      return;
+    }
 
     if (serviceIndex >= 0 && serviceIndex < services.length) {
       session.selectedService = services[serviceIndex].id;
