@@ -117,7 +117,50 @@ function insertDefaultServices() {
   }
 }
 
-export function saveDatabase() {
+// Type normalization functions
+function normalizeClientRow(row: Record<string, unknown>): Client {
+  return {
+    id: String(row.id || ''),
+    phone: String(row.phone || ''),
+    name: String(row.name || ''),
+    notes: row.notes ? String(row.notes) : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)) : new Date(),
+    lastVisit: row.last_visit ? new Date(String(row.last_visit)) : undefined,
+    totalVisits: Number(row.total_visits) || 0
+  };
+}
+
+function normalizeServiceRow(row: Record<string, unknown>): Service {
+  return {
+    id: String(row.id || ''),
+    name: String(row.name || ''),
+    price: Number(row.price) || 0,
+    duration: Number(row.duration) || 30,
+    description: row.description ? String(row.description) : undefined,
+    active: Boolean(row.active)
+  };
+}
+
+function normalizeAppointmentRow(row: Record<string, unknown>): Appointment {
+  return {
+    id: String(row.id || ''),
+    clientId: String(row.client_id || ''),
+    clientPhone: String(row.client_phone || ''),
+    clientName: String(row.client_name || ''),
+    serviceId: String(row.service_id || ''),
+    serviceName: String(row.service_name || ''),
+    date: String(row.date || ''),
+    time: String(row.time || ''),
+    endTime: String(row.end_time || ''),
+    status: (row.status as Appointment['status']) || 'pending',
+    price: Number(row.price) || 0,
+    notes: row.notes ? String(row.notes) : undefined,
+    createdAt: row.created_at ? new Date(String(row.created_at)) : new Date(),
+    confirmedAt: row.confirmed_at ? new Date(String(row.confirmed_at)) : undefined
+  };
+}
+
+function saveDatabase() {
   if (db) {
     const data = db.export();
     const buffer = Buffer.from(data);
@@ -139,40 +182,48 @@ export function insertClient(client: Client) {
 }
 
 export function getClientByPhone(phone: string): Client | null {
-  const stmt = db?.prepare('SELECT * FROM clients WHERE phone = ?');
-  stmt?.get([phone]);
-  const row = stmt?.getAsObject();
-  stmt?.free();
-  return row ? (row as unknown as Client) : null;
+  if (!db || !phone) return null;
+  const stmt = db.prepare('SELECT * FROM clients WHERE phone = ?');
+  if (!stmt) return null;
+  stmt.bind([phone]);
+  const row = stmt.step() ? stmt.getAsObject() : null;
+  stmt.free();
+  return row ? normalizeClientRow(row as Record<string, unknown>) : null;
 }
 
 export function getAllClients(): Client[] {
-  const stmt = db?.prepare('SELECT * FROM clients ORDER BY name');
+  if (!db) return [];
+  const stmt = db.prepare('SELECT * FROM clients ORDER BY name');
+  if (!stmt) return [];
   const results: Client[] = [];
-  while (stmt?.step()) {
-    results.push(stmt.getAsObject() as unknown as Client);
+  while (stmt.step()) {
+    results.push(normalizeClientRow(stmt.getAsObject() as Record<string, unknown>));
   }
-  stmt?.free();
+  stmt.free();
   return results;
 }
 
 // Service operations
 export function getAllServices(): Service[] {
-  const stmt = db?.prepare('SELECT * FROM services WHERE active = 1 ORDER BY name');
+  if (!db) return [];
+  const stmt = db.prepare('SELECT * FROM services WHERE active = 1 ORDER BY name');
+  if (!stmt) return [];
   const results: Service[] = [];
-  while (stmt?.step()) {
-    results.push(stmt.getAsObject() as unknown as Service);
+  while (stmt.step()) {
+    results.push(normalizeServiceRow(stmt.getAsObject() as Record<string, unknown>));
   }
-  stmt?.free();
+  stmt.free();
   return results;
 }
 
 export function getServiceById(id: string): Service | null {
-  const stmt = db?.prepare('SELECT * FROM services WHERE id = ?');
-  stmt?.get([id]);
-  const row = stmt?.getAsObject();
-  stmt?.free();
-  return row ? (row as unknown as Service) : null;
+  if (!db || !id) return null;
+  const stmt = db.prepare('SELECT * FROM services WHERE id = ?');
+  if (!stmt) return null;
+  stmt.bind([id]);
+  const row = stmt.step() ? stmt.getAsObject() : null;
+  stmt.free();
+  return row ? normalizeServiceRow(row as Record<string, unknown>) : null;
 }
 
 // Appointment operations
@@ -185,33 +236,37 @@ export function insertAppointment(appointment: Appointment) {
 }
 
 export function getAppointmentById(id: string): Appointment | null {
-  if (!id) return null;
-  const stmt = db?.prepare('SELECT * FROM appointments WHERE id = ?');
-  stmt?.bind([id]);
-  const row = stmt?.getAsObject();
-  stmt?.free();
-  return row ? (row as unknown as Appointment) : null;
+  if (!db || !id) return null;
+  const stmt = db.prepare('SELECT * FROM appointments WHERE id = ?');
+  if (!stmt) return null;
+  stmt.bind([id]);
+  const row = stmt.step() ? stmt.getAsObject() : null;
+  stmt.free();
+  return row ? normalizeAppointmentRow(row as Record<string, unknown>) : null;
 }
 
 export function getAppointmentsByDate(date: string): Appointment[] {
-  if (!date) return [];
-  const stmt = db?.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
-  stmt?.bind([date]);
+  if (!db || !date) return [];
+  const stmt = db.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
+  if (!stmt) return [];
+  stmt.bind([date]);
   const results: Appointment[] = [];
-  while (stmt?.step()) {
-    results.push(stmt.getAsObject() as unknown as Appointment);
+  while (stmt.step()) {
+    results.push(normalizeAppointmentRow(stmt.getAsObject() as Record<string, unknown>));
   }
-  stmt?.free();
+  stmt.free();
   return results;
 }
 
 export function getUpcomingAppointments(): Appointment[] {
-  const stmt = db?.prepare("SELECT * FROM appointments WHERE date >= date('now') AND status IN ('pending', 'confirmed') ORDER BY date, time");
+  if (!db) return [];
+  const stmt = db.prepare("SELECT * FROM appointments WHERE date >= date('now') AND status IN ('pending', 'confirmed') ORDER BY date, time");
+  if (!stmt) return [];
   const results: Appointment[] = [];
-  while (stmt?.step()) {
-    results.push(stmt.getAsObject() as unknown as Appointment);
+  while (stmt.step()) {
+    results.push(normalizeAppointmentRow(stmt.getAsObject() as Record<string, unknown>));
   }
-  stmt?.free();
+  stmt.free();
   return results;
 }
 
@@ -234,6 +289,7 @@ export function insertFinancialRecord(record: FinancialRecord) {
 }
 
 export function getFinancialRecords(startDate?: Date, endDate?: Date): FinancialRecord[] {
+  if (!db) return [];
   let query = 'SELECT * FROM financial_records';
   const params: string[] = [];
 
@@ -250,15 +306,25 @@ export function getFinancialRecords(startDate?: Date, endDate?: Date): Financial
 
   query += ' ORDER BY date DESC';
 
-  const stmt = db?.prepare(query);
+  const stmt = db.prepare(query);
+  if (!stmt) return [];
   if (params.length > 0) {
-    stmt?.bind(params);
+    stmt.bind(params);
   }
   const results: FinancialRecord[] = [];
-  while (stmt?.step()) {
-    results.push(stmt.getAsObject() as unknown as FinancialRecord);
+  while (stmt.step()) {
+    const row = stmt.getAsObject() as Record<string, unknown>;
+    results.push({
+      id: String(row.id || ''),
+      type: (row.type as FinancialRecord['type']) || 'income',
+      category: String(row.category || ''),
+      amount: Number(row.amount) || 0,
+      description: row.description ? String(row.description) : undefined,
+      date: row.date ? new Date(String(row.date)) : new Date(),
+      appointmentId: row.appointment_id ? String(row.appointment_id) : undefined
+    });
   }
-  stmt?.free();
+  stmt.free();
   return results;
 }
 
@@ -271,12 +337,13 @@ export function getFinancialSummary(startDate?: Date, endDate?: Date): { income:
 
 // Config operations
 export function getConfig(key: string): string | null {
-  if (!key) return null;
-  const stmt = db?.prepare('SELECT value FROM config WHERE key = ?');
-  stmt?.bind([key]);
-  const row = stmt?.getAsObject();
-  stmt?.free();
-  return row?.value as string || null;
+  if (!db || !key) return null;
+  const stmt = db.prepare('SELECT value FROM config WHERE key = ?');
+  if (!stmt) return null;
+  stmt.bind([key]);
+  const row = stmt.step() ? stmt.getAsObject() : null;
+  stmt.free();
+  return row ? String(row.value || '') : null;
 }
 
 export function setConfig(key: string, value: string) {

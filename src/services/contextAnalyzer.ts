@@ -22,7 +22,8 @@ interface ContextAnalysis {
 
 // Context keywords mapping
 const CONTEXT_KEYWORDS: { [key: string]: string[] } = {
-  ' ['scheduling',agendamento': 'appointment', 'booking', 'calendar'],
+  'scheduling': ['scheduling', 'agendamento', 'appointment', 'booking', 'calendar'],
+  'agendamento': ['appointment', 'booking', 'calendar'],
   'horario': ['time', 'schedule', 'availability', 'slots'],
   'whatsapp': ['messaging', 'whatsapp', 'baileys', 'chat'],
   'bot': ['automation', 'bot', 'ai', 'assistant'],

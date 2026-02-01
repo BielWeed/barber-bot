@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid';
-import { sendEmail } from './moltbook';
 import { getConfig, setConfig } from './database';
 
 const MOLTBOOK_API_URL = process.env.MOLTBOOK_API_URL || 'https://api.moltbook.com';
@@ -21,6 +20,14 @@ interface MoltbookPost {
   author: string;
   timestamp: string;
   likes: number;
+}
+
+interface MoltbookSkillsResponse {
+  skills?: MoltbookSkill[];
+}
+
+interface MoltbookPostsResponse {
+  posts?: MoltbookPost[];
 }
 
 export class MoltbookService {
@@ -54,7 +61,7 @@ export class MoltbookService {
         return [];
       }
 
-      const data = await response.json();
+      const data: MoltbookSkillsResponse = await response.json();
       return data.skills || [];
     } catch (error) {
       console.log('Moltbook skill search unavailable:', error);
@@ -75,7 +82,7 @@ export class MoltbookService {
 
       if (!response.ok) return [];
 
-      const data = await response.json();
+      const data: MoltbookSkillsResponse = await response.json();
       return data.skills || [];
     } catch (error) {
       console.log('Moltbook trending skills unavailable');
@@ -120,7 +127,7 @@ export class MoltbookService {
 
       if (!response.ok) return [];
 
-      const data = await response.json();
+      const data: MoltbookPostsResponse = await response.json();
       return data.posts || [];
     } catch (error) {
       console.log('Moltbook feed unavailable');

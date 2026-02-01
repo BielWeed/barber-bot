@@ -11,7 +11,10 @@ interface FinancialSession {
   selectedCategory?: string;
   amount?: number;
   description?: string;
+  createdAt: number;  // Timestamp para expiração de sessão
 }
+
+const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos
 
 export class FinancialHandler {
   private whatsapp: WhatsAppService;
@@ -67,20 +70,25 @@ export class FinancialHandler {
     }
 
     if (command === 'entrada' || command === 'receita') {
-      this.sessions.set(senderPhone, { phone: senderPhone, state: 'selecting_type', selectedType: 'income' });
+      this.sessions.set(senderPhone, { phone: senderPhone, state: 'selecting_type', selectedType: 'income', createdAt: Date.now() });
       await this.sendIncomeCategories(senderJid);
       return;
     }
 
     if (command === 'saída' || command === 'saida' || command === 'despesa') {
-      this.sessions.set(senderPhone, { phone: senderPhone, state: 'selecting_type', selectedType: 'expense' });
+      this.sessions.set(senderPhone, { phone: senderPhone, state: 'selecting_type', selectedType: 'expense', createdAt: Date.now() });
       await this.sendExpenseCategories(senderJid);
       return;
     }
 
-    // Handle flow
+    // Handle flow - check for session expiration
     const session = this.sessions.get(senderPhone);
     if (session) {
+      if (Date.now() - session.createdAt > SESSION_TIMEOUT_MS) {
+        this.sessions.delete(senderPhone);
+        await this.whatsapp.sendMessage(senderJid, '❌ Sessão expirada. Por favor, tente novamente.');
+        return;
+      }
       await this.handleFlow(session, command, senderJid);
     }
   }
@@ -160,7 +168,7 @@ export class FinancialHandler {
   }
 
   private async handleDescriptionInput(session: FinancialSession, command: string, jid: string): Promise<void> {
-    session.description = command === 'pular' || command === 'pular' ? '' : command;
+    session.description = command === 'pular' ? '' : command;
     session.state = 'confirming';
 
     const typeText = session.selectedType === 'income' ? 'ENTRADA' : 'SAÍDA';

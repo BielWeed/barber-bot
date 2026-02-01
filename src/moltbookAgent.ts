@@ -294,5 +294,3 @@ export function getSkillsForMessage(message: string): MoltbookSkill[] {
   const result = analyzeContext(message);
   return result.relevantSkills;
 }
-
-export type { ContextResult };
