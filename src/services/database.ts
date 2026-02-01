@@ -185,16 +185,18 @@ export function insertAppointment(appointment: Appointment) {
 }
 
 export function getAppointmentById(id: string): Appointment | null {
+  if (!id) return null;
   const stmt = db?.prepare('SELECT * FROM appointments WHERE id = ?');
-  stmt?.get([id]);
+  stmt?.bind([id]);
   const row = stmt?.getAsObject();
   stmt?.free();
   return row ? (row as unknown as Appointment) : null;
 }
 
 export function getAppointmentsByDate(date: string): Appointment[] {
+  if (!date) return [];
   const stmt = db?.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
-  stmt?.bind([date]);
+  stmt?.bind(date);
   const results: Appointment[] = [];
   while (stmt?.step()) {
     results.push(stmt.getAsObject() as unknown as Appointment);
@@ -249,8 +251,10 @@ export function getFinancialRecords(startDate?: Date, endDate?: Date): Financial
   query += ' ORDER BY date DESC';
 
   const stmt = db?.prepare(query);
-  if (params.length > 0) {
-    stmt?.bind(params);
+  if (params.length === 1) {
+    stmt?.bind(params[0]);
+  } else if (params.length === 2) {
+    stmt?.bind(params[0], params[1]);
   }
   const results: FinancialRecord[] = [];
   while (stmt?.step()) {
@@ -269,8 +273,9 @@ export function getFinancialSummary(startDate?: Date, endDate?: Date): { income:
 
 // Config operations
 export function getConfig(key: string): string | null {
+  if (!key) return null;
   const stmt = db?.prepare('SELECT value FROM config WHERE key = ?');
-  stmt?.get([key]);
+  stmt?.bind(key);
   const row = stmt?.getAsObject();
   stmt?.free();
   return row?.value as string || null;
