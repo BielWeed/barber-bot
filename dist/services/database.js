@@ -176,13 +176,17 @@ function insertAppointment(appointment) {
     saveDatabase();
 }
 function getAppointmentById(id) {
+    if (!id)
+        return null;
     const stmt = db?.prepare('SELECT * FROM appointments WHERE id = ?');
-    stmt?.get([id]);
+    stmt?.bind([id]);
     const row = stmt?.getAsObject();
     stmt?.free();
     return row ? row : null;
 }
 function getAppointmentsByDate(date) {
+    if (!date)
+        return [];
     const stmt = db?.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
     stmt?.bind([date]);
     const results = [];
@@ -246,8 +250,10 @@ function getFinancialSummary(startDate, endDate) {
 }
 // Config operations
 function getConfig(key) {
+    if (!key)
+        return null;
     const stmt = db?.prepare('SELECT value FROM config WHERE key = ?');
-    stmt?.get([key]);
+    stmt?.bind([key]);
     const row = stmt?.getAsObject();
     stmt?.free();
     return row?.value || null;
