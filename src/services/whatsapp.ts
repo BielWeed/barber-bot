@@ -182,7 +182,8 @@ export class WhatsAppService extends EventEmitter {
 
   async getSenderPhone(message: WAMessage): Promise<string> {
     const key = message.key;
-    const jid = key.remoteJid || '';
+    // For group messages, use participant instead of remoteJid
+    const jid = message.key.participant || key.remoteJid || '';
     // Extract phone number from jid (format: phone@s.whatsapp.net)
     const phone = jid.split('@')[0];
     return phone;
@@ -191,6 +192,10 @@ export class WhatsAppService extends EventEmitter {
   async getGroupJid(message: WAMessage): Promise<string | null> {
     const jid = message.key.remoteJid;
     if (jid && jid.endsWith('@g.us')) {
+      return jid;
+    }
+    // Also check for broadcast or other formats
+    if (jid && (jid.endsWith('@broadcast') || jid.includes('@g.us'))) {
       return jid;
     }
     return null;
