@@ -2,6 +2,9 @@ import { DateTime, Interval } from 'luxon';
 import { Service, Appointment } from '../models/types';
 import { getAllServices, getAppointmentsByDate, getServiceById } from './database';
 
+// Set locale to Portuguese
+DateTime.local().setLocale('pt-BR');
+
 export class SchedulerService {
   private workingHourStart: string;
   private workingHourEnd: string;

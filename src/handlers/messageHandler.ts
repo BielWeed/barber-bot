@@ -530,32 +530,23 @@ Gerencie sua barbearia!`;
   }
 
   private async handleTimeSelection(session: UserSession, command: string, jid: string): Promise<void> {
-    const dates = this.scheduler.getNext7Days();
-    const dateIndex = parseInt(command) - 1;
+    const times = await this.scheduler.getAvailableSlotsFormatted(session.selectedDate!, session.selectedService!);
+    const timeIndex = parseInt(command) - 1;
 
-    // Check if user is trying to change date
-    if (dateIndex >= 0 && dateIndex < dates.length) {
-      session.selectedDate = dates[dateIndex];
-      session.state = 'selecting_time';
-
+    // Check if command is a valid number
+    if (isNaN(timeIndex)) {
       const service = getServiceById(session.selectedService!);
-      const times = await this.scheduler.getAvailableSlotsFormatted(session.selectedDate, session.selectedService!);
-
+      await this.whatsapp.sendMessage(jid, '❌ Por favor, digite o *número* do horário desejado:\n');
       let text = `🕐 *SELECIONE O HORÁRIO*\n\n`;
-      text += `📅 ${this.scheduler.formatDate(session.selectedDate)}\n`;
+      text += `📅 ${this.scheduler.formatDate(session.selectedDate!)}\n`;
       text += `💇 ${service?.name} (${service?.duration} min)\n\n`;
-
       times.forEach((time, i) => {
         text += `*${i + 1}* - ${this.scheduler.formatTime(time)}\n`;
       });
       text += `\n*0* - Cancelar`;
-
       await this.whatsapp.sendMessage(jid, text);
       return;
     }
-
-    const times = await this.scheduler.getAvailableSlotsFormatted(session.selectedDate!, session.selectedService!);
-    const timeIndex = parseInt(command) - 1;
 
     if (timeIndex >= 0 && timeIndex < times.length) {
       session.selectedTime = times[timeIndex];
