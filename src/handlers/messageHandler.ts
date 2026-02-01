@@ -56,23 +56,29 @@ export class MessageHandler {
     const senderPhone = await this.whatsapp.getSenderPhone(message);
     const groupJid = await this.whatsapp.getGroupJid(message);
     const isGroupMessage = !!groupJid;
-
-    // Ignore group messages except in manager group
-    if (isGroupMessage && groupJid !== this.managerGroupJid) {
-      return;
-    }
+    const senderJid = message.key.remoteJid || '';
 
     // Ignore status broadcasts
     if (senderPhone === 'status') return;
 
-    const command = content?.trim().toLowerCase() || '';
-    const senderJid = message.key.remoteJid || '';
-
     // Check if it's a command for the manager group
     if (isGroupMessage && groupJid === this.managerGroupJid) {
-      await this.handleManagerCommand(command, senderPhone, senderJid);
+      await this.handleManagerCommand(content?.trim() || '', senderPhone, senderJid);
       return;
     }
+
+    // If owner sends a message from a group and manager group is not set, ask for JID
+    if (isGroupMessage && senderPhone === this.ownerPhone && !this.managerGroupJid) {
+      await this.whatsapp.sendMessage(senderJid,
+        `👋 Olá! Para usar comandos neste grupo, preciso do JID do grupo.\n\n` +
+        `O JID aparece no link do convite ou você pode obter no WhatsApp Web.\n\n` +
+        `Digite no terminal: setgroup <jid-do-grupo>\n\n` +
+        `Exemplo: setgroup 120363XXXXXXXXXX@g.us`
+      );
+      return;
+    }
+
+    const command = content?.trim().toLowerCase() || '';
 
     // Handle regular customer messages
     await this.handleCustomerMessage(command, senderPhone, senderJid, content || '');
