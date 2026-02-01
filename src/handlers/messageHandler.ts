@@ -51,6 +51,11 @@ export class MessageHandler {
     this.managerGroupJid = jid;
   }
 
+  // Normalize phone number for comparison (remove all non-digits)
+  private normalizePhone(phone: string): string {
+    return phone.replace(/[^0-9]/g, '');
+  }
+
   async handleMessage(message: WAMessage): Promise<void> {
     const content = await this.whatsapp.getMessageContent(message);
     const senderPhone = await this.whatsapp.getSenderPhone(message);
@@ -58,11 +63,19 @@ export class MessageHandler {
     const isGroupMessage = !!groupJid;
     const senderJid = message.key.remoteJid || '';
 
+    // Debug log
+    console.log(`Msg: "${content}" | from: ${senderPhone} | group: ${groupJid || 'nenhum'}`);
+
     // Ignore status broadcasts
     if (senderPhone === 'status') return;
 
+    // Normalize phones for comparison
+    const normalizedSender = this.normalizePhone(senderPhone);
+    const normalizedOwner = this.normalizePhone(this.ownerPhone);
+    const isOwner = normalizedSender === normalizedOwner;
+
     // Check if owner wants to install this group as manager
-    if (isGroupMessage && content?.trim().toLowerCase() === '!instalar' && senderPhone === this.ownerPhone) {
+    if (isGroupMessage && content?.trim().toLowerCase() === '!instalar' && isOwner) {
       this.managerGroupJid = groupJid;
       await this.whatsapp.sendMessage(senderJid,
         `✅ *Grupo de Gerenciamento Configurado!*\n\n` +
