@@ -182,8 +182,9 @@ function getAppointmentById(id) {
 }
 function getAppointmentsByDate(date) {
     const stmt = db?.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
+    stmt?.bind([date]);
     const results = [];
-    while (stmt?.step([date])) {
+    while (stmt?.step()) {
         results.push(stmt.getAsObject());
     }
     stmt?.free();
@@ -225,8 +226,11 @@ function getFinancialRecords(startDate, endDate) {
     }
     query += ' ORDER BY date DESC';
     const stmt = db?.prepare(query);
+    if (params.length > 0) {
+        stmt?.bind(params);
+    }
     const results = [];
-    while (stmt?.step(...params)) {
+    while (stmt?.step()) {
         results.push(stmt.getAsObject());
     }
     stmt?.free();

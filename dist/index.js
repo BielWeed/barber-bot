@@ -66,14 +66,15 @@ async function main() {
     // Event listeners
     whatsapp.on('qr', async (qr) => {
         console.log('\n📱 Escaneie o QR Code abaixo para conectar ao WhatsApp:\n');
-        // Generate QR code for terminal
+        // Generate QR code directly in terminal
         try {
             const QRCode = await Promise.resolve().then(() => __importStar(require('qrcode')));
-            const qrDataUrl = await QRCode.toDataURL(qr);
-            console.log('QR Code gerado! (Acesse via navegador para ver a imagem)');
-            console.log('Ou use um leitor de QR Code para ver os dados raw:', qr.substring(0, 50) + '...\n');
+            const qrTerminal = await QRCode.toString(qr, { type: 'terminal', small: true });
+            console.log(qrTerminal);
+            console.log('\n💡 Abra o WhatsApp > Dispositivos conectados > Conectar dispositivo\n');
         }
-        catch {
+        catch (error) {
+            console.log('❌ Erro ao gerar QR Code:', error);
             console.log('QR Code raw:', qr);
         }
     });

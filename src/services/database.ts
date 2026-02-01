@@ -194,8 +194,9 @@ export function getAppointmentById(id: string): Appointment | null {
 
 export function getAppointmentsByDate(date: string): Appointment[] {
   const stmt = db?.prepare('SELECT * FROM appointments WHERE date = ? ORDER BY time');
+  stmt?.bind([date]);
   const results: Appointment[] = [];
-  while (stmt?.step([date])) {
+  while (stmt?.step()) {
     results.push(stmt.getAsObject() as unknown as Appointment);
   }
   stmt?.free();
@@ -248,8 +249,11 @@ export function getFinancialRecords(startDate?: Date, endDate?: Date): Financial
   query += ' ORDER BY date DESC';
 
   const stmt = db?.prepare(query);
+  if (params.length > 0) {
+    stmt?.bind(params);
+  }
   const results: FinancialRecord[] = [];
-  while (stmt?.step(...params)) {
+  while (stmt?.step()) {
     results.push(stmt.getAsObject() as unknown as FinancialRecord);
   }
   stmt?.free();
